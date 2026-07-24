@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Precision Jigsaw Engine Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Dancing+Script:wght@700&display=swap');
+        body { margin: 0; overflow: hidden; font-family: sans-serif; background: #eadfce; touch-action: none; }
+        .controls { 
+            position: absolute; top: 0; width: 100%; height: 60px; 
+            background: #fbf7f1; display: flex; align-items: center; 
+            justify-content: center; gap: 12px; z-index: 10; border-bottom: 2px solid #dccbb6;
+            transition: opacity 0.25s ease, pointer-events 0.25s ease;
+        }
+        .controls.dimmed {
+            opacity: 0.35;
+            pointer-events: none; 
+        }
+        button, input { padding: 8px 12px; border-radius: 4px; border: none; font-weight: bold; }
+        button { background: #a8785a; color: #ffffff; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; }
+        button:hover { background: #8f6249; }
+        input[type="number"] { width: 45px; background: #f1e7da; color: #674c3b; text-align: center; }
+        .controls label[style] { color: #674c3b !important; }
+        
+        /* Custom File Input Styling */
+        .file-input-wrapper { display: flex; align-items: center; gap: 8px; }
+        #imgInput { display: none; }
+        
+        .custom-file-btn { 
+            background-color: #f2e8dc; 
+            color: #674c3b; 
+            cursor: pointer; 
+            padding: 2px 6px; 
+            border: 1px solid #cdb79e; 
+            border-radius: 2px; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 13.333px; 
+            font-weight: 400; 
+            user-select: none; 
+            display: inline-block; 
+        }
+        .custom-file-btn:hover { background-color: #ead9c7; border-color: #aa896e; }
+        .custom-file-btn:active { background-color: #dfcbb6; }
+        
+        .file-status-text { 
+            color: #8a6f5b; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 13.333px; 
+            font-weight: 400; 
+            min-width: 130px; 
+        }
+
+        .btn-preview { 
+            background: #9c8877; 
+            width: 36px;
+            height: 36px;        
+            padding: 0;     
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .btn-preview.active { background: #b68c68; } 
+        .btn-preview:hover { opacity: 0.9; }
+
+        .btn-clean-tray {
+            background: #b88376;
+            width: 36px;
+            height: 36px;        
+            padding: 0;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .btn-clean-tray:hover { background: #a46e61; }
+
+        /* Custom Pause Button */
+        .btn-pause { 
+            background: #c89c62; 
+            color: white; 
+            padding: 0; 
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            overflow: hidden;
+            visibility: hidden; 
+        }
+        .btn-pause:hover { background: #b3864f; }
+        .btn-pause img {
+            width: 90%;
+            height: 90%;
+            object-fit: contain;
+            margin: auto;
+        }
+        
+        .btn-resume { 
+            background: #b68c68; 
+            color: white; 
+            display: none; 
+            position: fixed;
+            top: 72%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            z-index: 30; 
+            padding: 16px 32px; 
+            font-size: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+        }
+        .btn-resume:hover { background: #9e7454; }
+
+        .btn-filter { 
+            background: #9d8caf; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 36px;  
+            height: 36px; 
+            padding: 0;   
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .btn-filter.active { background: #b68c68; border: 1px solid #d4b18d; }
+        .btn-filter img { 
+            width: 96%;      
+            height: 96%;     
+            object-fit: contain; 
+            margin: auto;
+        }
+
+        /* Outline Toggle Styling matches active state properly */
+        .btn-outline-toggle { 
+            background: #a9947d; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 36px;  
+            height: 36px; 
+            padding: 0;   
+            box-sizing: border-box;
+            font-size: 18px;
+        }
+        .btn-outline-toggle.active { background: #a58ba8; border: 1px solid #cdb8c9; }
+
+        #preview-popup {
+            position: absolute;
+            top: 75px;
+            right: 20px;
+            z-index: 20;
+            background: rgba(251, 247, 241, 0.94);
+            border: 2px solid #c9a985;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 15px 35px -5px rgba(103, 76, 59, 0.22);
+            display: none;
+            pointer-events: auto;
+            touch-action: none;
+            cursor: grab;
+            transform-origin: top left;
+            transition: opacity 0.22s ease;
+        }
+        #preview-popup.preview-paused {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #preview-popup img {
+            display: block;
+            max-width: 400px;  
+            max-height: 400px; 
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 4px;
+            opacity: 0.95;
+        }
+        #orientationGuard {
+            display: none !important;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+            background: #eadfce;
+            color: #674c3b;
+            font: 700 28px "Courier New", monospace;
+            text-align: center;
+        }
+        #gameShell { position: fixed; inset: 0; overflow: hidden; }
+        .size-picker { position: relative; display: inline-flex; }
+        .size-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 50%;
+            z-index: 60;
+            display: none;
+            width: 52px;
+            max-height: 210px;
+            overflow-y: auto;
+            transform: translateX(-50%);
+            padding: 4px;
+            border: 1px solid #cdb79e;
+            border-radius: 6px;
+            background: #fbf7f1;
+            box-shadow: 0 10px 22px rgba(103, 76, 59, 0.2);
+        }
+        .size-picker.open .size-menu { display: block; }
+        .size-menu button {
+            width: 100%;
+            margin: 1px 0;
+            padding: 4px 0;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        @media (orientation: portrait) and (pointer: coarse) {
+            #gameShell {
+                width: 100vh;
+                height: 100vw;
+                inset: auto;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(90deg);
+                transform-origin: center;
+            }
+        }
+
+        .tray-arrow {
+            position: absolute;
+            bottom: 5px;
+            height: 70px;  
+            width: 35px;   
+            background: rgba(241, 231, 218, 0.92);
+            color: #806047;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            border: 2px solid #d4bea4;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .tray-arrow:hover { background: #ad8464; color: white; border-color: #c9a985; }
+        .tray-arrow:active { transform: scale(0.93); }
+        .tray-arrow img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        #arrow-left { left: 8px; border-radius: 6px; }
+        #arrow-right { right: 8px; border-radius: 6px; }
+
+        .blend-icon {
+            width: 88%; 
+            height: 88%; 
+            object-fit: contain; 
+            margin: auto;
+        }
+
+        /* Thumbs Up Dynamic Pop-Up Animation Styling */
+        .thumb-popup-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            pointer-events: none;
+            width: min(140px, 25vw);
+            height: min(140px, 25vw);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: liftThumbAndFade 2.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6));
+        }
+
+        @keyframes liftThumbAndFade {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 60%) scale(0.4);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -60%) scale(1.1);
+            }
+            30% {
+                transform: translate(-50%, -50%) scale(1.0);
+            }
+            85% {
+                opacity: 1;
+                transform: translate(-50%, -52%) scale(1.0);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -110%) scale(0.7);
+            }
+        }
+
+        /* Six-second opening screen — the puzzle game remains unchanged behind it. */
+        #introPage {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            overflow: hidden;
+            background: #eadfce;
+            isolation: isolate;
+        }
+        #introPage::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: url('Cat1.png') center / cover no-repeat;
+            transition: opacity 0.55s ease;
+            z-index: -2;
+        }
+        #introPage::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 248, 238, 0.10);
+            z-index: -1;
+            pointer-events: none;
+        }
+        .intro-photo-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: url('Cat1.png') center / cover no-repeat;
+            transition: opacity 0.55s ease;
+            pointer-events: none;
+        }
+        .intro-loading {
+            position: absolute;
+            left: 21%;
+            top: 31%;
+            width: min(370px, 38vw);
+            min-width: 250px;
+            transform: translate(-50%, -50%);
+            color: #493326;
+            text-align: center;
+            font-family: "American Typewriter Condensed", "American Typewriter", "Courier New", Courier, monospace;
+            font-weight: 700;
+            text-shadow: 0 1px 0 rgba(255, 250, 243, 0.7);
+            z-index: 4;
+        }
+        .intro-copy {
+            margin: 0;
+            white-space: nowrap;
+            width: 100%;
+            clip-path: inset(0 50% 0 50%);
+            animation: introType 0.9s steps(28, end) forwards;
+        }
+        .intro-copy.top { margin-bottom: 16px; animation-delay: 0.15s; }
+        .intro-copy.bottom { margin-top: 16px; font-size: clamp(11px, 1.05vw, 15px); animation-delay: 0.65s; }
+        .intro-copy .script-word { font-family: "Segoe Script", "Dancing Script", cursive; }
+        @keyframes introType { to { clip-path: inset(0 0 0 0); } }
+        .intro-track {
+            position: relative;
+            width: min(245px, 27vw);
+            min-width: 195px;
+            height: 30px;
+            margin: 0 auto;
+            border: 2px solid rgba(110, 76, 51, 0.65);
+            border-radius: 16px;
+            background: rgba(255, 249, 240, 0.55);
+            box-shadow: inset 0 2px 7px rgba(89, 54, 31, 0.12), 0 5px 14px rgba(89, 54, 31, 0.14);
+            overflow: visible;
+        }
+        .intro-track::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 100%;
+            border-radius: 14px 0 0 14px;
+            background: repeating-linear-gradient(-45deg, rgba(190, 129, 82, 0.92) 0 8px, rgba(243, 213, 177, 0.92) 8px 16px);
+            animation: loaderFill 3s linear forwards;
+        }
+        @keyframes loaderFill { to { width: 100%; } }
+        .push-team {
+            position: absolute;
+            left: -22px;
+            top: -23px;
+            width: 70px;
+            height: 70px;
+            background: url('person.png') center / contain no-repeat;
+            filter: drop-shadow(0 2px 1px rgba(71, 42, 23, 0.22));
+            animation: pushPuzzle 3s cubic-bezier(.35,.05,.55,1) forwards;
+        }
+        @keyframes pushPuzzle { to { left: calc(100% - 47px); } }
+        .intro-piece {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.55s ease;
+            z-index: 2;
+        }
+        .intro-puzzle-lines {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1.15s ease;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .intro-puzzle-lines path { fill: none; stroke: rgba(91, 56, 35, 0.75); stroke-width: 2; }
+        #introPage.puzzle-outline .intro-puzzle-lines { opacity: 1; }
+        #introPage.assemble-pieces .intro-piece { opacity: 1; }
+        #introPage.falling::before, #introPage.falling .intro-photo-layer { opacity: 0; }
+        #introPage.pieces-fall .intro-piece { animation: introPieceFall 3.2s cubic-bezier(.2,.72,.5,1) forwards; }
+        #introPage.falling .intro-puzzle-lines, #introPage.falling .intro-loading { opacity: 0; transition: opacity 0.35s ease; }
+        @keyframes introPieceFall { to { transform: translateY(115vh) rotate(var(--turn)); opacity: 0; } }
+        #introPage.exit { animation: introExit 0.45s ease forwards; }
+        @keyframes introExit { to { opacity: 0; visibility: hidden; } }
+        .intro-message {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 0;
+            width: min(440px, 78vw);
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #4a2d20;
+            font-family: 'Amatic SC', 'Comic Sans MS', cursive;
+            font-size: clamp(42px, 5vw, 76px);
+            font-weight: 700;
+            line-height: 0.86;
+            text-shadow: 0 2px 0 rgba(255, 247, 235, 0.75);
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            display: none;
+            transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+        }
+        #introPage.falling .intro-message {
+            opacity: 1;
+            visibility: visible;
+            display: block;
+            transition: opacity 0.35s ease;
+        }
+        #introPage.message-exit .intro-message { opacity: 0; }
+        .intro-message p { margin: 0; }
+        .intro-message img {
+            display: block;
+            width: min(260px, 50vw);
+            height: auto;
+            margin: 26px auto 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="orientationGuard">Rotate your device to landscape</div>
+<div id="gameShell">
+
+<div id="introPage" aria-label="Puzzle loading screen">
+    <div class="intro-message" aria-hidden="true">
+        <p>made with❤️<br>just for you</p>
+        <img src="logo.png" alt="">
+    </div>
+    <div class="intro-photo-layer" aria-hidden="true"></div>
+    <div class="intro-loading">
+        <p class="intro-copy top">Unwrapping your SURPRISE… 🎁</p>
+        <div id="introTrack" class="intro-track">
+            <span class="push-team" aria-hidden="true"></span>
+        </div>
+        <p class="intro-copy bottom">A <span class="script-word">puzzle</span> of moments, woven with <span class="script-word">love</span>. 🧩🌸</p>
+    </div>
+    <svg id="introPuzzleLayer" class="intro-puzzle-lines" viewBox="0 0 1536 1024" aria-hidden="true">
+        <path d="M200 0v210c28-32 55-32 55 0s27 32 55 0V0M400 0v210c28 32 55 32 55 0s27-32 55 0V0M600 0v210c28-32 55-32 55 0s27 32 55 0V0M800 0v210c28 32 55 32 55 0s27-32 55 0V0" />
+        <path d="M0 250h170c-28-32-28-62 0-62s28-30 0-62H0M200 250h170c28 32 28 62 0 62s-28 30 0 62H200M400 250h170c-28-32-28-62 0-62s28-30 0-62H400M600 250h170c28 32 28 62 0 62s-28 30 0 62H600M800 250h170c-28-32-28-62 0-62s28-30 0-62H800" />
+        <path d="M0 500h170c28 32 28 62 0 62s-28 30 0 62H0M200 500h170c-28-32-28-62 0-62s28-30 0-62H200M400 500h170c28 32 28 62 0 62s-28 30 0 62H400M600 500h170c-28-32-28-62 0-62s28-30 0-62H600M800 500h170c28 32 28 62 0 62s-28 30 0 62H800" />
+        <path d="M0 750h170c-28-32-28-62 0-62s28-30 0-62H0M200 750h170c28 32 28 62 0 62s-28 30 0 62H200M400 750h170c-28-32-28-62 0-62s28-30 0-62H400M600 750h170c28 32 28 62 0 62s-28-30 0-62H600M800 750h170c-28-32-28-62 0-62s28-30 0-62H800" />
+    </svg>
+</div>
+
+<div id="controlPanel" class="controls">
+    <div class="file-input-wrapper">
+        <label for="imgInput" class="custom-file-btn">Load Image 📸</label>
+        <input type="file" id="imgInput" accept="image/*">
+        <span id="fileStatus" class="file-status-text">Ready, Mama? 👀</span>
+    </div>
+
+    <label style="color:white; font-size:14px; font-weight:bold;">Rows:</label><span class="size-picker"><input type="number" id="rows" value="3" min="2"><span class="size-menu" aria-label="Suggested row values"><button type="button">6</button><button type="button">8</button><button type="button">10</button><button type="button">12</button><button type="button">15</button><button type="button">20</button><button type="button">25</button></span></span>
+    <label style="color:white; font-size:14px; font-weight:bold;">Cols:</label><span class="size-picker"><input type="number" id="cols" value="3" min="2"><span class="size-menu" aria-label="Suggested column values"><button type="button">6</button><button type="button">8</button><button type="button">10</button><button type="button">12</button><button type="button">15</button><button type="button">20</button><button type="button">25</button></span></span>
+    <button onclick="startPuzzle()">Generate</button>
+    
+    <button id="filterBtn" class="btn-filter" onclick="toggleEdgeFilter()" title="Edge Pieces Only">
+        <img src="puzzle.png"
+         alt="🧩">
+    </button>
+
+    <!-- Initialized layout state starts with the "🙈" (See no evil) monkey since outlines are off by default -->
+    <button id="outlineToggleBtn" class="btn-outline-toggle active" onclick="toggleOutlines()" title="Hide/Show Outlines">🙈</button>
+
+    <button class="btn-clean-tray" onclick="sweepToTray()" title="Clean Tray">
+        <img src="broom1.png"
+         alt="🧹" class="blend-icon">
+    </button>
+    
+    <button id="previewBtn" class="btn-preview" onclick="togglePreview()" title="Preview Map">
+        <img src="binocular1.png"
+         alt="🔭" class="blend-icon">
+    </button>
+    
+    <button id="pauseBtn" class="btn-pause" onclick="pauseGame()" title="Pause Game">
+        <img src="pause1.png" alt="⏸️">
+    </button>
+</div>
+
+<button id="resumeBtn" class="btn-resume" onclick="resumeGame()">▶ Resume Game</button>
+
+<div id="preview-popup">
+    <img id="previewImg" src="" alt="Reference Map">
+</div>
+
+<div id="arrow-left" class="tray-arrow">
+    <img src="arrow.png"
+     alt="◀" style="transform: scaleX(-1);">
+</div>
+<div id="arrow-right" class="tray-arrow">
+    <img src="arrow.png"
+     alt="▶">
+</div>
+</div>
+
+<script>
+let img;
+let pieces = [];      
+let trayOrder = [];   
+let rows, cols, pW, pH;
+let sW, sH; 
+let selected = null;
+let trayScroll = 0;
+let trayY;
+let startMouseX, startMouseY, startScroll;
+let isScrollingTray = false;
+let hasDraggedSelected = false; 
+
+let hTabs, vTabs;
+let boardX, boardY;
+const TRAY_GAP = 40; 
+
+let selectedOrigTrayIdx = -1;
+let gapClosingFactor = 0.0; 
+
+const TRAY_THRESHOLD = 5; 
+
+let dragGroupPieces = [];
+let groupPivotOffsetX = 0;
+let groupPivotOffsetY = 0;
+
+let isPreviewActive = false;
+let resetPreviewTransform = () => {};
+let isEdgeFilterActive = false;
+let areOutlinesVisible = false; // Changed default logic parameter configuration to false 
+const STATEMENT_FONT_FAMILY = '"Segoe Script", "Dancing Script", cursive';
+
+let isPuzzleComplete = false;
+let hasTriggeredBorderThumb = false;
+let confettiParticles = [];
+const TOTAL_CONFETTI_BURSTS = 180;
+
+let statementTrackingPool = []; 
+let activeVictoryStatement = "";
+let textAlpha = 0; 
+const victoryStatements = [
+    "Terbaikkk MAMA!! Hands down, indeed a Certified LEGEND! 🏆⚡🥰❤️",
+    "Keep it up MAMA! You’re on fireee! 🌋🔥",
+    "Queen MAMA strikes again! Pure perfection! 💅🥇",
+    "Champion energy, Mama! You are The Legend! 🏆👑",
+    "MAMA paling top!! Letop habiss! 🎆 Mini-love sikit! 🫰🏻❤️",
+    "Memang next level lah MAMA!! Tiada tandingan! 📈🦁",
+    "Absolutely slayed, Mama! ⚔️❤️",
+    "MVP goes to MAMA! 🎖️✨",
+    "You cracked the code MAMA! Pure genius! 🧩🧠✨",
+    "Puzzle Solver of the Year: MAMA! 🥇🧩",
+    "MAMA vs Puzzle = MAMA WIN! ⚔️👑",
+    "A+ for MAMA! 💯⭐",
+    "Every piece found its home! 🧩🏡 Brilliant job, Mama! 🌟🏆",
+    "Fantastic job MAMA! 😝🥳 You nailed it! 🔨💥",
+    "Good job Mama! 🤩🎉 You are simply the BEST! 🤩🎉",
+    "Well done Mama! 🎊🎉 The ultimate puzzle MASTER 🧩👑"
+];
+
+let isPaused = false;
+let totalPausedDuration = 0;
+let pauseStartTimestamp = 0;
+let pauseStatementPool = [];
+let activePauseStatement = "";
+const pauseStatements = [
+    "Chill out for a bit, MAMA! Even the Best need a Rest! 👑🛋️",
+    "Rome wasn’t built in a day, and neither is a MAMA masterpiece! 🏛️🧩",
+    "Brake jap MAMA! Great things take time to make! 🎨⏳",
+    "Chill first, MAMA! The crown is already yours anyway! 👑👑",
+    "Take your time, MAMA! True talent can't be rushed! 🌟🙌",
+    "Tactical timeout, MAMA! A champion doesn't rush perfection! ⏱️🏆✨",
+    "Slow your pace, MAMA! You’ve already won the race! 🏁🏆",
+    "Deep breath, MAMA! Time to rest the Best before you smash the Rest! 🥊🔥",
+    "No rush, MAMA! A little pause for the master of the cause! 👑⏱️"
+];
+
+let introText = "Ready to Piece! 🔥 Let's go, Mama!";
+let introTimerStart = 0;
+let introState = "holding"; 
+let introAlpha = 255;
+
+let scrollInterval = null;
+let longPressTimeout = null;
+let arrowScrollDir = 0; 
+const CLICK_SCROLL_AMT = 150;  
+const HOLD_SCROLL_SPEED = 8;   
+
+let puzzleStartTime = 0;
+let puzzleFinalElapsedTimeText = "";
+
+function startIntroAnimation() {
+    const introPage = document.getElementById('introPage');
+    const puzzleLayer = document.getElementById('introPuzzleLayer');
+    if (!introPage || !puzzleLayer) return;
+
+    const introRows = 4;
+    const introCols = 5;
+    const imageWidth = width;
+    const imageHeight = height;
+    const tileWidth = imageWidth / introCols;
+    const tileHeight = imageHeight / introRows;
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const horizontalTabs = Array.from({ length: introRows + 1 }, () => Array(introCols).fill(0));
+    const verticalTabs = Array.from({ length: introCols + 1 }, () => Array(introRows).fill(0));
+
+    for (let row = 1; row < introRows; row++) {
+        for (let col = 0; col < introCols; col++) horizontalTabs[row][col] = Math.random() < 0.5 ? -1 : 1;
+    }
+    for (let col = 1; col < introCols; col++) {
+        for (let row = 0; row < introRows; row++) verticalTabs[col][row] = Math.random() < 0.5 ? -1 : 1;
+    }
+
+    const addHorizontalEdge = (parts, x, y, length, tab) => {
+        if (tab === 0) {
+            parts.push(`L ${x + length} ${y}`);
+            return;
+        }
+        const direction = length > 0 ? 1 : -1;
+        const size = Math.min(Math.abs(tileWidth), Math.abs(tileHeight));
+        const depth = tab * size * 0.22;
+        const neck = size * 0.075;
+        const head = size * 0.145;
+        const mid = x + length * 0.5;
+        parts.push(
+            `L ${mid - neck * direction} ${y}`,
+            `C ${mid - neck * 0.8 * direction} ${y + depth * 0.05} ${mid - head * direction} ${y + depth * 0.45} ${mid - head * direction} ${y + depth * 0.72}`,
+            `C ${mid - head * direction} ${y + depth * 1.25} ${mid + head * direction} ${y + depth * 1.25} ${mid + head * direction} ${y + depth * 0.72}`,
+            `C ${mid + head * direction} ${y + depth * 0.45} ${mid + neck * 0.8 * direction} ${y + depth * 0.05} ${mid + neck * direction} ${y}`,
+            `L ${x + length} ${y}`
+        );
+    };
+    const addVerticalEdge = (parts, x, y, length, tab) => {
+        if (tab === 0) {
+            parts.push(`L ${x} ${y + length}`);
+            return;
+        }
+        const direction = length > 0 ? 1 : -1;
+        const size = Math.min(Math.abs(tileWidth), Math.abs(tileHeight));
+        const depth = tab * size * 0.22;
+        const neck = size * 0.075;
+        const head = size * 0.145;
+        const mid = y + length * 0.5;
+        parts.push(
+            `L ${x} ${mid - neck * direction}`,
+            `C ${x + depth * 0.05} ${mid - neck * 0.8 * direction} ${x + depth * 0.45} ${mid - head * direction} ${x + depth * 0.72} ${mid - head * direction}`,
+            `C ${x + depth * 1.25} ${mid - head * direction} ${x + depth * 1.25} ${mid + head * direction} ${x + depth * 0.72} ${mid + head * direction}`,
+            `C ${x + depth * 0.45} ${mid + head * direction} ${x + depth * 0.05} ${mid + neck * 0.8 * direction} ${x} ${mid + neck * direction}`,
+            `L ${x} ${y + length}`
+        );
+    };
+    const getPuzzlePath = (row, col) => {
+        const x = col * tileWidth;
+        const y = row * tileHeight;
+        const parts = [`M ${x} ${y}`];
+        addHorizontalEdge(parts, x, y, tileWidth, horizontalTabs[row][col]);
+        addVerticalEdge(parts, x + tileWidth, y, tileHeight, verticalTabs[col + 1][row]);
+        addHorizontalEdge(parts, x + tileWidth, y + tileHeight, -tileWidth, horizontalTabs[row + 1][col]);
+        addVerticalEdge(parts, x, y + tileHeight, -tileHeight, verticalTabs[col][row]);
+        parts.push('Z');
+        return parts.join(' ');
+    };
+
+    puzzleLayer.setAttribute('viewBox', `0 0 ${imageWidth} ${imageHeight}`);
+    puzzleLayer.setAttribute('preserveAspectRatio', 'none');
+    puzzleLayer.replaceChildren();
+    for (let row = 0; row < introRows; row++) {
+        for (let col = 0; col < introCols; col++) {
+            const pathData = getPuzzlePath(row, col);
+            const outline = document.createElementNS(svgNS, 'path');
+            outline.setAttribute('d', pathData);
+            puzzleLayer.appendChild(outline);
+
+            const piece = document.createElementNS(svgNS, 'svg');
+            piece.setAttribute('class', 'intro-piece');
+            piece.setAttribute('viewBox', `0 0 ${imageWidth} ${imageHeight}`);
+            piece.setAttribute('preserveAspectRatio', 'none');
+            piece.setAttribute('aria-hidden', 'true');
+            piece.style.animationDelay = `${Math.random() * 1.5}s`;
+            piece.style.setProperty('--turn', `${(col - 2) * 7 + (row % 2 ? 5 : -3)}deg`);
+            piece.style.transformOrigin = `${((col + 0.5) / introCols) * 100}% ${((row + 0.5) / introRows) * 100}%`;
+            const clipId = `introClip-${row}-${col}`;
+            const defs = document.createElementNS(svgNS, 'defs');
+            const clipPath = document.createElementNS(svgNS, 'clipPath');
+            clipPath.setAttribute('id', clipId);
+            const clipShape = document.createElementNS(svgNS, 'path');
+            clipShape.setAttribute('d', pathData);
+            clipPath.appendChild(clipShape);
+            defs.appendChild(clipPath);
+            const image = document.createElementNS(svgNS, 'image');
+            image.setAttribute('href', 'Cat1.png');
+            image.setAttribute('width', imageWidth);
+            image.setAttribute('height', imageHeight);
+            image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+            image.setAttribute('clip-path', `url(#${clipId})`);
+            const edge = document.createElementNS(svgNS, 'path');
+            edge.setAttribute('d', pathData);
+            edge.setAttribute('fill', 'none');
+            edge.setAttribute('stroke', 'rgba(91, 56, 35, 0.75)');
+            edge.setAttribute('stroke-width', '2');
+            piece.append(defs, image, edge);
+            introPage.appendChild(piece);
+        }
+    }
+
+    setTimeout(() => introPage.classList.add('puzzle-outline'), 3300);
+    setTimeout(() => introPage.classList.add('assemble-pieces'), 4250);
+    setTimeout(() => introPage.classList.add('falling'), 4850);
+    setTimeout(() => introPage.classList.add('pieces-fall'), 4900);
+    setTimeout(() => introPage.classList.add('message-exit'), 9550);
+    setTimeout(() => introPage.remove(), 10000);
+}
+
+function getGameViewportSize() {
+    const forceLandscape = window.matchMedia('(orientation: portrait) and (pointer: coarse)').matches;
+    return forceLandscape
+        ? { width: window.innerHeight, height: window.innerWidth }
+        : { width: window.innerWidth, height: window.innerHeight };
+}
+
+function setup() {
+    const viewport = getGameViewportSize();
+    const gameCanvas = createCanvas(viewport.width, viewport.height);
+    gameCanvas.parent('gameShell');
+    pixelDensity(displayDensity());
+    trayY = height - 90;
+    setupArrowEvents();
+    setupPreviewControls();
+    setupSizePickers();
+    document.addEventListener('pointerdown', () => {
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+    }, { once: true });
+    startIntroAnimation();
+}
+
+function getTrayLimit() {
+    return -(trayOrder.length * (sW + TRAY_GAP)) + width - 120;
+}
+
+function setupArrowEvents() {
+    setupArrowButton(document.getElementById('arrow-left'), 1, 'start');
+    setupArrowButton(document.getElementById('arrow-right'), -1, 'end');
+}
+
+function setupArrowButton(element, dir, targetBoundary) {
+    let lastTouchStart = 0;
+    const jumpToBoundary = () => {
+        if (!img || isPaused) return;
+        if (targetBoundary === 'start') {
+            trayScroll = 40;
+        } else {
+            let trayLimit = getTrayLimit();
+            trayScroll = min(trayLimit, 0);
+        }
+    };
+    const startScrollAction = (e) => {
+        e.preventDefault();
+        if (!img || isPaused) return;
+        arrowScrollDir = dir;
+        
+        shiftTray(dir * CLICK_SCROLL_AMT);
+        
+        longPressTimeout = setTimeout(() => {
+            scrollInterval = setInterval(() => {
+                shiftTray(arrowScrollDir * HOLD_SCROLL_SPEED);
+            }, 16);
+        }, 220); 
+    };
+
+    const stopScrollAction = () => {
+        clearTimeout(longPressTimeout);
+        clearInterval(scrollInterval);
+    };
+
+    element.addEventListener('mousedown', startScrollAction);
+    element.addEventListener('mouseup', stopScrollAction);
+    element.addEventListener('mouseleave', stopScrollAction);
+    
+    element.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const now = Date.now();
+        if (now - lastTouchStart < 320) {
+            stopScrollAction();
+            lastTouchStart = 0;
+            jumpToBoundary();
+            return;
+        }
+        lastTouchStart = now;
+        startScrollAction(e);
+    }, { passive: false });
+    element.addEventListener('touchend', stopScrollAction);
+    element.addEventListener('touchcancel', stopScrollAction);
+
+    element.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        jumpToBoundary();
+    });
+}
+
+function shiftTray(amt) {
+    trayScroll += amt;
+    let trayLimit = getTrayLimit(); 
+    trayScroll = constrain(trayScroll, min(trayLimit, 0), 40);
+}
+
+function closePreview() {
+    isPreviewActive = false;
+    const popup = document.getElementById('preview-popup');
+    const btn = document.getElementById('previewBtn');
+    popup.style.display = 'none';
+    popup.classList.remove('preview-paused');
+    resetPreviewTransform();
+    btn.classList.remove('active');
+}
+
+function togglePreview() {
+    if (!img || isPaused) return;
+    
+    if (!isPreviewActive) {
+        isPreviewActive = true;
+        let popup = document.getElementById('preview-popup');
+        let btn = document.getElementById('previewBtn');
+        popup.classList.remove('preview-paused');
+        popup.style.display = 'block';
+        btn.classList.add('active');
+    } else {
+        closePreview();
+    }
+}
+
+function setupPreviewControls() {
+    const popup = document.getElementById('preview-popup');
+    if (!popup) return;
+
+    let previewScale = 1;
+    let dragStart = null;
+    const pointers = new Map();
+    let pinchStartDistance = 0;
+    let pinchStartScale = 1;
+    const applyPreviewScale = () => {
+        popup.style.transform = `scale(${previewScale})`;
+    };
+    const resetPreview = () => {
+        previewScale = 1;
+        popup.style.transform = 'scale(1)';
+        popup.style.left = '';
+        popup.style.top = '75px';
+        popup.style.right = '20px';
+    };
+    resetPreviewTransform = resetPreview;
+    const pointerDistance = () => {
+        const points = [...pointers.values()];
+        return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+    };
+
+    popup.addEventListener('pointerdown', (e) => {
+        if (!isPreviewActive) return;
+        e.preventDefault();
+        popup.setPointerCapture(e.pointerId);
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1) {
+            const rect = popup.getBoundingClientRect();
+            popup.style.left = `${rect.left}px`;
+            popup.style.top = `${rect.top}px`;
+            popup.style.right = 'auto';
+            dragStart = { x: e.clientX, y: e.clientY, left: rect.left, top: rect.top };
+        } else if (pointers.size === 2) {
+            pinchStartDistance = pointerDistance();
+            pinchStartScale = previewScale;
+            dragStart = null;
+        }
+    });
+    popup.addEventListener('pointermove', (e) => {
+        if (!pointers.has(e.pointerId)) return;
+        e.preventDefault();
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size >= 2) {
+            previewScale = constrain(pinchStartScale * (pointerDistance() / pinchStartDistance), 0.45, 2.4);
+            applyPreviewScale();
+        } else if (dragStart) {
+            popup.style.left = `${dragStart.left + e.clientX - dragStart.x}px`;
+            popup.style.top = `${dragStart.top + e.clientY - dragStart.y}px`;
+        }
+    });
+    const endPreviewPointer = (e) => {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) dragStart = null;
+    };
+    popup.addEventListener('pointerup', endPreviewPointer);
+    popup.addEventListener('pointercancel', endPreviewPointer);
+    popup.addEventListener('wheel', (e) => {
+        if (!isPreviewActive) return;
+        e.preventDefault();
+        previewScale = constrain(previewScale * (e.deltaY < 0 ? 1.12 : 0.89), 0.45, 2.4);
+        applyPreviewScale();
+    }, { passive: false });
+}
+
+function setupSizePickers() {
+    document.querySelectorAll('.size-picker').forEach((picker) => {
+        const input = picker.querySelector('input');
+        const closePicker = () => picker.classList.remove('open');
+        input.addEventListener('focus', () => picker.classList.add('open'));
+        input.addEventListener('click', () => picker.classList.add('open'));
+        picker.querySelectorAll('.size-menu button').forEach((button) => {
+            button.addEventListener('click', () => {
+                input.value = button.textContent;
+                closePicker();
+                input.focus();
+            });
+        });
+        document.addEventListener('pointerdown', (event) => {
+            if (!picker.contains(event.target)) closePicker();
+        });
+    });
+}
+
+function toggleEdgeFilter() {
+    if (!img || pieces.length === 0 || isPaused) return;
+
+    isEdgeFilterActive = !isEdgeFilterActive;
+    let btn = document.getElementById('filterBtn');
+
+    if (isEdgeFilterActive) {
+        btn.classList.add('active');
+        trayOrder = trayOrder.filter(p => p.r === 0 || p.r === rows - 1 || p.c === 0 || p.c === cols - 1);
+    } else {
+        btn.classList.remove('active');
+        trayOrder = [];
+        pieces.forEach(p => {
+            if (!p.isLocked && !p.isSweeping && p.inTray) {
+                trayOrder.push(p);
+            }
+        });
+        trayOrder.sort((a, b) => a.id - b.id);
+    }
+}
+
+function toggleOutlines() {
+    if (!img || isPaused) return;
+    areOutlinesVisible = !areOutlinesVisible;
+    let btn = document.getElementById('outlineToggleBtn');
+    if (!areOutlinesVisible) {
+        btn.classList.add('active');
+        btn.innerText = "🙈";
+    } else {
+        btn.classList.remove('active');
+        btn.innerText = "🙉";
+    }
+} 
+
+function triggerThumbAnimation() {
+    let thumbNode = document.createElement('div');
+    thumbNode.className = 'thumb-popup-container';
+    thumbNode.innerHTML = '<img src="thumb ups 1.png" style="width:100%; height:100%; object-fit:contain;">';
+    document.body.appendChild(thumbNode);
+    
+    // Auto clear element node frame space dynamically after sequence plays out completely
+    setTimeout(() => {
+        thumbNode.remove();
+    }, 2450);
+}
+
+function pauseGame() {
+    if (!img || isPuzzleComplete || isPaused) return;
+    isPaused = true;
+    pauseStartTimestamp = millis();
+    
+    document.getElementById('pauseBtn').style.visibility = 'hidden'; 
+    document.getElementById('controlPanel').classList.add('dimmed');
+    document.getElementById('resumeBtn').style.display = 'block';
+    
+    if (isPreviewActive) document.getElementById('preview-popup').classList.add('preview-paused');
+
+    if (pauseStatementPool.length === 0) {
+        for (let i = 0; i < pauseStatements.length; i++) {
+            pauseStatementPool.push(i);
+        }
+        shuffle(pauseStatementPool, true);
+    }
+    let chosenPauseIndex = pauseStatementPool.pop();
+    activePauseStatement = pauseStatements[chosenPauseIndex];
+}
+
+function resumeGame() {
+    if (!isPaused) return;
+    isPaused = false;
+    totalPausedDuration += (millis() - pauseStartTimestamp);
+    
+    document.getElementById('resumeBtn').style.display = 'none';
+    document.getElementById('controlPanel').classList.remove('dimmed');
+    document.getElementById('pauseBtn').style.visibility = 'visible'; 
+    if (isPreviewActive) document.getElementById('preview-popup').classList.remove('preview-paused');
+}
+
+document.getElementById('imgInput').onchange = (e) => {
+    let reader = e.target.files[0] ? new FileReader() : null;
+    if(reader) {
+        document.getElementById('fileStatus').innerText = "Game On! 🎮";
+        
+        reader.onload = (f) => loadImage(f.target.result, i => { 
+            img = i; 
+            document.getElementById('previewImg').src = f.target.result;
+            startPuzzle(); 
+        });
+        reader.readAsDataURL(e.target.files[0]);
+    }
+};
+
+function startPuzzle() {
+    if (!img) return;
+    rows = parseInt(document.getElementById('rows').value);
+    cols = parseInt(document.getElementById('cols').value);
+    pieces = [];
+    trayOrder = [];
+    trayScroll = 0;
+    selected = null;
+    hasDraggedSelected = false;
+    selectedOrigTrayIdx = -1;
+    gapClosingFactor = 0.0;
+    
+    isPreviewActive = false;
+    document.getElementById('preview-popup').style.display = 'none';
+    document.getElementById('preview-popup').classList.remove('preview-paused');
+    resetPreviewTransform();
+    document.getElementById('previewBtn').classList.remove('active');
+
+    isEdgeFilterActive = false;
+    document.getElementById('filterBtn').classList.remove('active');
+
+    // Setting configuration states so outlines reset to fully invisible by default
+    areOutlinesVisible = false;
+    let outlineBtn = document.getElementById('outlineToggleBtn');
+    if (outlineBtn) {
+        outlineBtn.classList.add('active');
+        outlineBtn.innerText = "🙈";
+    }
+
+    isPuzzleComplete = false;
+    hasTriggeredBorderThumb = false;
+    isPaused = false;
+    totalPausedDuration = 0;
+    document.getElementById('resumeBtn').style.display = 'none';
+    document.getElementById('controlPanel').classList.remove('dimmed');
+    document.getElementById('pauseBtn').style.visibility = 'visible'; 
+
+    confettiParticles = [];
+    textAlpha = 0; 
+
+    introText = "Ready to Piece! 🔥 Let's go, Mama!";
+    introAlpha = 255;
+    introState = "holding";
+
+    // Locked Layout Strategy using fixed 9x9 configuration boundary calculations
+    let fitW = width * 0.92;
+    let fitH = height * 0.72; 
+    let scale = min(fitW / img.width, fitH / img.height);
+    
+    // Board size locked strictly to 9x9 dimensions setup
+    let lockedPW = (img.width * scale) / 9;
+    let lockedPH = (img.height * scale) / 9;
+
+    pW = (img.width * scale) / cols;
+    pH = (img.height * scale) / rows;
+
+    // Piece tray sizing set static to 9x9 grid individual piece dimensions
+    sW = lockedPW;
+    sH = lockedPH;
+
+    boardX = (width - (lockedPW * 9)) / 2;
+    boardY = 85 + ((trayY - 95) - (lockedPH * 9)) / 2;
+
+    hTabs = Array.from({length: rows+1}, () => Array(cols).fill(0));
+    vTabs = Array.from({length: cols+1}, () => Array(rows).fill(0));
+
+    for(let r=1; r<rows; r++) for(let c=0; c<cols; c++) hTabs[r][c] = random([-1, 1]);
+    for(let c=1; c<cols; c++) for(let r=0; r<rows; r++) vTabs[c][r] = random([-1, 1]);
+
+    let srcW = img.width / cols;
+    let srcH = img.height / rows;
+
+    let idCounter = 0;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            let p = {
+                id: idCounter++,
+                groupId: idCounter, 
+                r, c,
+                t: hTabs[r][c], b: hTabs[r+1][c],
+                l: vTabs[c][r], rs: vTabs[c+1][r],
+                srcX: c * srcW, 
+                srcY: r * srcH,
+                srcW: srcW, 
+                srcH: srcH,
+                targetX: boardX + c * pW,
+                targetY: boardY + r * pH,
+                currX: 0, currY: 0,
+                isLocked: false,
+                glowFade: 0.0, 
+                inTray: true,
+                isSweeping: false,
+                sweepTargetXLocal: 0, 
+                isOnBoardFrame: false,
+                currentScale: sW / pW 
+            };
+            pieces.push(p);
+            trayOrder.push(p);
+        }
+    }
+
+    shuffle(trayOrder, true); 
+
+    let baselineY = trayY + 15;
+    for (let i = 0; i < trayOrder.length; i++) {
+        trayOrder[i].currX = trayScroll + i * (sW + TRAY_GAP) + 50;
+        trayOrder[i].currY = baselineY;
+    }
+
+    puzzleStartTime = millis();
+    introTimerStart = millis();
+    puzzleFinalElapsedTimeText = "";
+}
+
+function triggerVictoryFX() {
+    // A finished puzzle always clears the reference image before completion effects appear.
+    if (isPreviewActive) closePreview();
+    isPuzzleComplete = true;
+    textAlpha = 0; 
+    document.getElementById('pauseBtn').style.visibility = 'hidden'; 
+    
+    let totalSecondsDuration = floor(((millis() - puzzleStartTime) - totalPausedDuration) / 1000);
+    if(totalSecondsDuration < 0) totalSecondsDuration = 0;
+    
+    if (totalSecondsDuration >= 3600) {
+        let hours = floor(totalSecondsDuration / 3600);
+        let minutes = floor((totalSecondsDuration % 3600) / 60);
+        let seconds = totalSecondsDuration % 60;
+        puzzleFinalElapsedTimeText = "⏱️ " + hours + ":" + nf(minutes, 2) + ":" + nf(seconds, 2);
+    } else {
+        let minutes = floor(totalSecondsDuration / 60);
+        let seconds = totalSecondsDuration % 60;
+        puzzleFinalElapsedTimeText = "⏱️ " + nf(minutes, 2) + ":" + nf(seconds, 2);
+    }
+
+    if (statementTrackingPool.length === 0) {
+        for (let i = 0; i < victoryStatements.length; i++) {
+            statementTrackingPool.push(i);
+        }
+        shuffle(statementTrackingPool, true); 
+    }
+    
+    let chosenIndex = statementTrackingPool.pop();
+    activeVictoryStatement = victoryStatements[chosenIndex];
+    
+    pieces.forEach(p => {
+        p.glowFade = 1.0; 
+    });
+
+    for (let i = 0; i < TOTAL_CONFETTI_BURSTS; i++) {
+        confettiParticles.push({
+            pos: createVector(random(boardX, boardX + (pW * cols)), random(boardY, boardY + (pH * rows))),
+            vel: p5.Vector.fromAngle(random(TWO_PI)).mult(random(3, 9)),
+            color: color(random(['#d69a83', '#c7a27a', '#e4c68d', '#c69a7a', '#b9a0b5', '#c8b58a'])),
+            size: random(6, 12),
+            rotation: random(TWO_PI),
+            rotSpeed: random(-0.1, 0.1),
+            gravity: random(0.12, 0.25)
+        });
+    }
+}
+
+function checkVictoryCondition() {
+    if (isPuzzleComplete || pieces.length === 0) return;
+    
+    let allLocked = pieces.every(p => p.isLocked);
+    if (allLocked) {
+        triggerVictoryFX();
+    }
+}
+
+function sweepToTray() {
+    if (pieces.length === 0 || isPuzzleComplete || isPaused) return;
+
+    let groupCounts = {};
+    pieces.forEach(p => {
+        groupCounts[p.groupId] = (groupCounts[p.groupId] || 0) + 1;
+    });
+
+    pieces.forEach(p => {
+        if (!p.isLocked && groupCounts[p.groupId] === 1 && !p.inTray && !p.isSweeping) {
+            let passesFilter = !isEdgeFilterActive || (p.r === 0 || p.r === rows - 1 || p.c === 0 || p.c === cols - 1);
+            
+            if (passesFilter) {
+                if (!trayOrder.includes(p)) {
+                    trayOrder.push(p);
+                }
+                
+                let slotIndex = trayOrder.indexOf(p);
+                p.sweepTargetXLocal = slotIndex * (sW + TRAY_GAP) + 50;
+                
+                p.isSweeping = true;
+                p.isOnBoardFrame = false;
+            } else {
+                p.inTray = true;
+                p.isOnBoardFrame = false;
+            }
+        }
+    });
+}
+
+function getPieceTargetScale(p) {
+    let trayScaleFactor = sW / pW;
+    let isHoveringFrame = false;
+
+    if (selected && hasDraggedSelected && (p === selected || p.groupId === selected.groupId)) { 
+        let boardW = pW * cols;
+        let boardH = pH * rows;
+        if (mouseX >= boardX && mouseX <= boardX + boardW && mouseY >= boardY && mouseY <= boardY + boardH) {
+            isHoveringFrame = true;
+        }
+    }
+
+    if (p.isLocked || p.isOnBoardFrame || isHoveringFrame) {
+        return 1.0;
+    }
+    return trayScaleFactor;
+}
+
+function draw() {
+    background(234, 223, 206);
+    if (!img) return;
+
+    if (isPaused) {
+        push();
+        fill(235, 224, 208, 210);
+        rect(0, 0, width, height);
+        
+        let cx = width / 2;
+        let cy = height / 2 - 60;
+        
+        drawingContext.save();
+        drawingContext.shadowColor = 'rgba(92, 65, 48, 0.22)';
+        drawingContext.shadowBlur = 4;
+        drawingContext.shadowOffsetY = 2;
+        textAlign(CENTER, CENTER);
+        
+        drawingContext.font = `700 ${constrain(width * 0.03, 20, 36)}px ${STATEMENT_FONT_FAMILY}`;
+        stroke('rgba(255, 250, 243, 0.9)');
+        strokeWeight(1.5);
+        fill('#674c3b');
+        
+        let safeMarginWidth = width * 0.68; 
+        let rowHeight = constrain(width * 0.03, 20, 36) * 1.4; 
+        drawWrappedText(activePauseStatement, cx, cy, safeMarginWidth, rowHeight);
+        
+        drawingContext.restore();
+        pop();
+        return; 
+    }
+
+    // Force outlines to stay visible when complete, slightly brighter than baseline mode (alpha increased to 0.70)
+    if (areOutlinesVisible || isPuzzleComplete) {
+        stroke(139, 103, 77, isPuzzleComplete ? 190 : 42); // 180 out of 255 is ~0.70 alpha (brighter than 30 / ~0.12 alpha)
+        strokeWeight(1.5);
+        noFill();
+
+        for (let r = 1; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                let x1 = boardX + c * pW; let y1 = boardY + r * pH;
+                beginShape(); vertex(x1, y1);
+                drawInterlockingCurveShape(x1, y1, x1 + pW, y1, hTabs[r][c], true, pW, pH);
+                endShape();
+            }
+        }
+        for (let c = 1; c < cols; c++) {
+            for (let r = 0; r < rows; r++) {
+                let x1 = boardX + c * pW; let y1 = boardY + r * pH;
+                beginShape(); vertex(x1, y1);
+                drawInterlockingCurveShape(x1, y1, x1, y1 + pH, vTabs[c][r], false, pW, pH);
+                endShape();
+            }
+        }
+    }
+    
+    // Outer puzzle frame outline rendering becomes slightly brighter post-completion
+    if (isPuzzleComplete) {
+        noFill();
+        stroke('rgba(163, 120, 87, 0.75)'); // Brighter stroke configuration on victory resolution
+        strokeWeight(1.5);
+    } else {
+        stroke(139, 103, 77, 72); 
+        strokeWeight(2.5);
+        noFill();
+    }
+    rect(boardX, boardY, pW * cols, pH * rows);
+
+    if (introState !== "inactive" && !isPuzzleComplete) {
+        if (introState === "holding") {
+            if (millis() - introTimerStart > 2600) {
+                introState = "fading";
+            }
+        } else if (introState === "fading") {
+            introAlpha -= 7;
+            if (introAlpha <= 0) {
+                introState = "inactive";
+            }
+        }
+
+        if (introState !== "inactive") {
+            if (millis() - introTimerStart > 200) {
+                push();
+                textAlign(CENTER, BOTTOM);
+                textSize(constrain(pW * 0.16, 12, 15));
+                textFont('"Courier New", Courier, monospace');
+                textStyle(BOLD);
+                fill(103, 76, 59, introAlpha); 
+                
+                text(introText, width / 2, boardY - 6);
+                pop();
+            }
+        }
+    }
+
+    if (confettiParticles.length > 0) {
+        push();
+        noStroke();
+        for (let i = confettiParticles.length - 1; i >= 0; i--) {
+            let cp = confettiParticles[i];
+            
+            cp.pos.add(cp.vel);
+            cp.vel.y += cp.gravity;
+            cp.vel.x *= 0.98; 
+            cp.rotation += cp.rotSpeed;
+
+            fill(cp.color);
+            push();
+            translate(cp.pos.x, cp.pos.y);
+            rotate(cp.rotation);
+            rectMode(CENTER);
+            rect(0, 0, cp.size, cp.size * sin(cp.rotation));
+            pop();
+
+            if (cp.pos.y > height + 20) {
+                confettiParticles.splice(i, 1);
+            }
+        }
+        pop();
+    }
+
+    if (mouseIsPressed && isScrollingTray) {
+        trayScroll = startScroll + (mouseX - startMouseX);
+        let trayLimit = getTrayLimit(); 
+        trayScroll = constrain(trayScroll, min(trayLimit, 0), 40);
+    }
+
+    let baselineY = trayY + 15;
+    let targetInsertionIndex = -1;
+    let insertGapFactor = 0.0;
+
+    if (selected && hasDraggedSelected) {
+        if (mouseY > trayY - TRAY_THRESHOLD) {
+            insertGapFactor = map(mouseY, trayY - TRAY_THRESHOLD, baselineY, 0.0, 1.0, true);
+            let relativeX = mouseX - trayScroll - 50;
+            targetInsertionIndex = Math.round(relativeX / (sW + TRAY_GAP)); 
+            targetInsertionIndex = constrain(targetInsertionIndex, 0, trayOrder.length);
+        } else {
+            insertGapFactor = 0.0;
+        }
+    }
+
+    gapClosingFactor = lerp(gapClosingFactor, 0.0, 0.15);
+
+    let activeSlotIndex = 0;
+    trayOrder.forEach((p) => {
+        if (!(selected && hasDraggedSelected && p === selected)) {
+            let baseIndex = activeSlotIndex;
+            
+            if (selectedOrigTrayIdx !== -1 && activeSlotIndex >= selectedOrigTrayIdx) {
+                baseIndex += gapClosingFactor;
+            }
+            
+            if (targetInsertionIndex !== -1 && activeSlotIndex >= targetInsertionIndex) {
+                baseIndex += insertGapFactor;
+            }
+            
+            let targetTrayX = trayScroll + baseIndex * (sW + TRAY_GAP) + 50;
+            
+            if (selected && !hasDraggedSelected && p === selected) {
+                p.currX = targetTrayX;
+                p.currY = baselineY;
+            } else if (!p.isSweeping) {
+                p.currX = lerp(p.currX, targetTrayX, 0.14);
+                p.currY = lerp(p.currY, baselineY, 0.14);
+            }
+            activeSlotIndex++;
+        }
+    });
+
+    let trayScaleFactor = sW / pW;
+    pieces.forEach((p) => {
+        if (p.isSweeping) {
+            let dynamicWorldTargetX = trayScroll + p.sweepTargetXLocal;
+            
+            let visualTargetX = dynamicWorldTargetX;
+            if (dynamicWorldTargetX > width - 50) {
+                visualTargetX = width - 50; 
+            } else if (dynamicWorldTargetX < 50) {
+                visualTargetX = 50; 
+            }
+
+            let isOffScreenLeft = (p.currX + (pW * p.currentScale) < 20);
+            let isOffScreenRight = (p.currX > width - 20);
+            
+            if ((isOffScreenLeft && visualTargetX === 50) || (isOffScreenRight && visualTargetX === width - 50)) {
+                p.isSweeping = false;
+                p.inTray = true;
+                p.currX = dynamicWorldTargetX;
+                p.currY = baselineY;
+                p.currentScale = trayScaleFactor;
+            } else {
+                let dx = visualTargetX - p.currX;
+                let dy = baselineY - p.currY;
+                let stepDist = 18; 
+                let totalDist = sqrt(dx*dx + dy*dy);
+                
+                if (totalDist <= stepDist) {
+                    p.isSweeping = false;
+                    p.inTray = true;
+                    p.currX = dynamicWorldTargetX;
+                    p.currY = baselineY;
+                    p.currentScale = trayScaleFactor;
+                } else {
+                    p.currX += (dx / totalDist) * stepDist;
+                    p.currY += (dy / totalDist) * stepDist;
+                    p.currentScale = lerp(p.currentScale, trayScaleFactor, 0.08);
+                }
+            }
+        }
+
+        if (!p.isLocked && !p.inTray && !p.isSweeping && (!selected || p.groupId !== selected.groupId)) {
+            let targetScale = getPieceTargetScale(p);
+            p.currentScale = lerp(p.currentScale, targetScale, 0.14);
+        }
+    });
+
+    if (selected && hasDraggedSelected) {
+        let targetScale = getPieceTargetScale(selected);
+        selected.currentScale = lerp(selected.currentScale, targetScale, 0.14); 
+        
+        let idealPieceX = mouseX - groupPivotOffsetX * selected.currentScale;
+        let idealPieceY = mouseY - groupPivotOffsetY * selected.currentScale;
+
+        let groupAnchorX = idealPieceX - selected.c * pW * selected.currentScale;
+        let groupAnchorY = idealPieceY - selected.r * pH * selected.currentScale;
+
+        dragGroupPieces.forEach(p => {
+            p.currentScale = selected.currentScale; 
+            p.currX = groupAnchorX + p.c * pW * selected.currentScale;
+            p.currY = groupAnchorY + p.r * pH * selected.currentScale;
+        });
+    }
+
+    pieces.forEach((p) => {
+        if (p.inTray && !p.isLocked && !p.isSweeping && (!selected || p.groupId !== selected.groupId)) {
+            if (isEdgeFilterActive) {
+                let matchesFilter = (p.r === 0 || p.r === rows - 1 || p.c === 0 || p.c === cols - 1);
+                if (!matchesFilter) return; 
+            }
+        }
+
+        if (p.isLocked) {
+            p.currentScale = 1.0;
+        } else if (p.inTray && (!selected || p.groupId !== selected.groupId)) {
+            let targetScale = getPieceTargetScale(p);
+            p.currentScale = lerp(p.currentScale, targetScale, 0.14);
+        }
+
+        let renderW = pW * p.currentScale;
+        let renderH = pH * p.currentScale;
+
+        push();
+        translate(p.currX, p.currY);
+
+        if (p.glowFade > 0) {
+            push();
+            drawingContext.shadowBlur = (isPuzzleComplete ? 55 : 82) * p.glowFade;
+            drawingContext.shadowColor = isPuzzleComplete 
+                ? `rgba(255, 255, 255, ${p.glowFade * 0.95})` 
+                : `rgba(188, 145, 107, ${p.glowFade * 0.95})`; 
+            
+            fill('rgba(255, 248, 238, ' + (p.glowFade * (isPuzzleComplete ? 0.48 : 0.62)) + ')'); 
+            stroke(isPuzzleComplete ? `rgba(255, 255, 255, ${p.glowFade})` : `rgba(201, 158, 117, ${p.glowFade})`);
+            
+            let localGlowWeight = isPuzzleComplete ? 3.0 : 4.0;
+            strokeWeight(localGlowWeight);
+            
+            beginShape();
+            drawContinuousPieceShape(0, 0, renderW, renderH, p.t, p.rs, p.b, p.l, renderW, renderH);
+            endShape(CLOSE);
+            pop();
+        }
+
+        drawingContext.save(); 
+        beginShape(); 
+        drawContinuousPieceShape(0, 0, renderW, renderH, p.t, p.rs, p.b, p.l, renderW, renderH);
+        endShape(CLOSE); 
+        drawingContext.clip();
+        
+        let paddingW = renderW * 0.4;
+        let paddingH = renderH * 0.4;
+        let pSrcX = p.srcX - (p.srcW * 0.4);
+        let pSrcY = p.srcY - (p.srcH * 0.4);
+        
+        image(img, -paddingW, -paddingH, renderW + paddingW * 2, renderH + paddingH * 2, pSrcX, pSrcY, p.srcW * 1.8, p.srcH * 1.8);
+        drawingContext.restore(); 
+        
+        // Slightly brighter outline trace configuration on individual puzzle items when done (alpha 0.70)
+        if (areOutlinesVisible || p.inTray || (selected && dragGroupPieces.includes(p)) || isPuzzleComplete) {
+            noFill();
+            stroke(isPuzzleComplete ? 'rgba(255,255,255,0.70)' : 'rgba(124,87,63,0.42)');
+            strokeWeight(1.5);
+            beginShape();
+            drawContinuousPieceShape(0, 0, renderW, renderH, p.t, p.rs, p.b, p.l, renderW, renderH);
+            endShape();
+        }
+        
+        pop();
+
+        if (p.glowFade > 0) {
+            if (isPuzzleComplete) {
+                p.glowFade -= 0.003; 
+            } else {
+                p.glowFade -= 0.010; 
+            }
+            if (p.glowFade < 0) p.glowFade = 0;
+        }
+    });
+
+    if (isPuzzleComplete && puzzleFinalElapsedTimeText !== "") {
+        drawingContext.save();
+        drawingContext.font = `${constrain(pW * 0.20, 14, 18)}px "Courier New", Courier, monospace`;
+        drawingContext.fillStyle = `rgba(103, 76, 59, ${textAlpha})`;
+        // Safari can ignore the canvas centre anchor for emoji-containing text.
+        // Position from the measured left edge so every browser gets the same centre.
+        const timerCenterX = boardX + (pW * cols) / 2;
+        const timerLeftX = timerCenterX - drawingContext.measureText(puzzleFinalElapsedTimeText).width / 2;
+        drawingContext.textAlign = 'left';
+        drawingContext.textBaseline = 'bottom';
+        drawingContext.fillText(puzzleFinalElapsedTimeText, timerLeftX, boardY - 6);
+        drawingContext.restore();
+    }
+
+    if (isPuzzleComplete && pieces.length > 0) {
+        if (textAlpha < 1.0) {
+            textAlpha += 0.018; 
+        }
+
+        push();
+        let cx = boardX + (pW * cols) / 2;
+        let cy = boardY + (pH * rows) / 2;
+
+        drawingContext.save();
+        drawingContext.shadowColor = `rgba(255, 250, 243, ${textAlpha * 0.9})`;
+        drawingContext.shadowBlur = 4;
+        drawingContext.shadowOffsetX = 0;
+        drawingContext.shadowOffsetY = 2;
+        textAlign(CENTER, CENTER);
+        
+        drawingContext.font = `700 ${constrain(width * 0.03, 20, 36)}px ${STATEMENT_FONT_FAMILY}`;
+        stroke(`rgba(255, 250, 243, ${textAlpha * 0.9})`);
+        strokeWeight(1.5);
+        fill(`rgba(103, 76, 59, ${textAlpha})`);
+        
+        let safeMarginWidth = width * 0.68; 
+        let rowHeight = constrain(width * 0.03, 20, 36) * 1.4; 
+        
+        drawWrappedText(activeVictoryStatement, cx, cy, safeMarginWidth, rowHeight);
+        drawingContext.restore();
+        pop();
+    }
+}
+
+function drawWrappedText(phrase, textX, textY, maxLineWidth, rowHeight) {
+    let separateWords = phrase.split(' ');
+    let textLines = [];
+    let currentLineString = "";
+
+    for (let n = 0; n < separateWords.length; n++) {
+        let testLineString = currentLineString + separateWords[n] + ' ';
+        let currentTestWidth = drawingContext.measureText(testLineString).width;
+        
+        if (currentTestWidth > maxLineWidth && n > 0) {
+            textLines.push(currentLineString.trim());
+            currentLineString = separateWords[n] + ' ';
+        } else {
+            currentLineString = testLineString;
+        }
+    }
+    textLines.push(currentLineString.trim());
+
+    let startingYOffset = textY - ((textLines.length - 1) * rowHeight) / 2;
+
+    // Use a calculated left edge instead of textAlign='center'.  This avoids the
+    // iPad Safari text-anchor issue that made phrases begin at the screen centre.
+    drawingContext.textAlign = 'left';
+    drawingContext.textBaseline = 'middle';
+    for (let k = 0; k < textLines.length; k++) {
+        const lineY = startingYOffset + (k * rowHeight);
+        const lineLeftX = textX - drawingContext.measureText(textLines[k]).width / 2;
+        drawingContext.strokeText(textLines[k], lineLeftX, lineY);
+        drawingContext.fillText(textLines[k], lineLeftX, lineY);
+    }
+}
+
+function drawContinuousPieceShape(x, y, w, h, t, r, b, l, currentW, currentH) {
+    vertex(x, y);
+    if (t !== 0) drawInterlockingCurveShape(x, y, x + w, y, t, true, currentW, currentH); else vertex(x + w, y);
+    if (r !== 0) drawInterlockingCurveShape(x + w, y, x + w, y + h, r, false, currentW, currentH); else vertex(x + w, y + h);
+    if (b !== 0) drawInterlockingCurveShape(x + w, y + h, x, y + h, b, true, currentW, currentH); else vertex(x, y + h); 
+    if (l !== 0) drawInterlockingCurveShape(x, y + h, x, y, l, false, currentW, currentH); else vertex(x, y);          
+    vertex(x, y);
+}
+
+function drawInterlockingCurveShape(x1, y1, x2, y2, type, horiz, currentW, currentH) {
+    let sizeFactor = min(currentW, currentH);
+    let depth = type * (sizeFactor * 0.22); 
+    let neckWidth = sizeFactor * 0.075;     
+    let headWidth = sizeFactor * 0.145;     
+
+    if (horiz) {
+        let direction = (x2 > x1) ? 1 : -1;
+        let totalDist = x2 - x1; let midX = x1 + totalDist * 0.5;
+        vertex(midX - neckWidth * direction, y1);
+        bezierVertex(midX - neckWidth * 0.8 * direction, y1 + depth * 0.05, midX - headWidth * direction, y1 + depth * 0.45, midX - headWidth * direction, y1 + depth * 0.72);
+        bezierVertex(midX - headWidth * direction, y1 + depth * 1.25, midX + headWidth * direction, y1 + depth * 1.25, midX + headWidth * direction, y1 + depth * 0.72);
+        bezierVertex(midX + headWidth * direction, y1 + depth * 0.45, midX + neckWidth * 0.8 * direction, y1 + depth * 0.05, midX + neckWidth * direction, y1);
+        vertex(x2, y2);
+    } else {
+        let direction = (y2 > y1) ? 1 : -1;
+        let totalDist = y2 - y1; let midY = y1 + totalDist * 0.5;
+        vertex(x1, midY - neckWidth * direction);
+        bezierVertex(x1 + depth * 0.05, midY - neckWidth * 0.8 * direction, x1 + depth * 0.45, midY - headWidth * direction, x1 + depth * 0.72, midY - headWidth * direction);
+        bezierVertex(x1 + depth * 1.25, midY - headWidth * direction, x1 + depth * 1.25, midY + headWidth * direction, x1 + depth * 0.72, midY + headWidth * direction);
+        bezierVertex(x1 + depth * 0.45, midY + headWidth * direction, x1 + depth * 0.05, midY + neckWidth * 0.8 * direction, x1, midY + neckWidth * direction);
+        vertex(x2, y2);
+    }
+}
+
+function mousePressed() {
+    if (mouseY < 60 || isPuzzleComplete || isPaused) return; 
+    
+    if (mouseX < 50 && mouseY > trayY) return; 
+    if (mouseX > width - 50 && mouseY > trayY) return;
+
+    startMouseX = mouseX; startMouseY = mouseY; startScroll = trayScroll; isScrollingTray = false;
+    hasDraggedSelected = false; 
+    
+    for (let i = pieces.length - 1; i >= 0; i--) {
+        let p = pieces[i];
+        
+        if (p.inTray && !p.isLocked && isEdgeFilterActive) {
+            let matchesFilter = (p.r === 0 || p.r === rows - 1 || p.c === 0 || p.c === cols - 1);
+            if (!matchesFilter) continue;
+        }
+
+        let clickW = pW * p.currentScale;
+        let clickH = pH * p.currentScale;
+        
+        if (!p.isLocked && !p.isSweeping && mouseX > p.currX && mouseX < p.currX + clickW && mouseY > p.currY && mouseY < p.currY + clickH) {
+            selected = p;
+            
+            groupPivotOffsetX = (mouseX - p.currX) / p.currentScale;
+            groupPivotOffsetY = (mouseY - p.currY) / p.currentScale;
+
+            dragGroupPieces = [];
+            pieces.forEach(piece => {
+                if(piece.groupId === selected.groupId) {
+                    dragGroupPieces.push(piece);
+                }
+            });
+
+            pieces = pieces.filter(item => item.groupId !== selected.groupId).concat(dragGroupPieces);
+            return;
+        }
+    }
+    if (mouseY > trayY + 10) isScrollingTray = true;
+}
+
+function mouseDragged() {
+    if (selected && !isPuzzleComplete && !isPaused) {
+        if (!hasDraggedSelected && dist(mouseX, mouseY, startMouseX, startMouseY) > 3) {
+            hasDraggedSelected = true;
+            
+            dragGroupPieces.forEach(p => {
+                if (p.inTray) {
+                    let idx = trayOrder.indexOf(p);
+                    if (p === selected) selectedOrigTrayIdx = idx;
+                    gapClosingFactor = 1.0; 
+                    if (idx !== -1) trayOrder.splice(idx, 1);
+                }
+            });
+        }
+    }
+}
+
+function mouseReleased() {
+    if (selected && !isPuzzleComplete && !isPaused) {
+        if (hasDraggedSelected) {
+            let snapPiece = null;
+            for (let p of dragGroupPieces) {
+                let distToTarget = dist(p.currX, p.currY, p.targetX, p.targetY);
+                if (distToTarget < 35) {
+                    snapPiece = p;
+                    break; 
+                }
+            }
+
+            let boardW = pW * cols;
+            let boardH = pH * rows;
+            let droppedInsidePuzzleFrame = (mouseX >= boardX && mouseX <= boardX + boardW && mouseY >= boardY && mouseY <= boardY + boardH);
+            let trayScaleFactor = sW / pW;
+
+            if (snapPiece) {
+                dragGroupPieces.forEach(p => {
+                    p.currX = p.targetX;
+                    p.currY = p.targetY;
+                    p.isLocked = true;
+                    p.glowFade = 1.0; 
+                    p.inTray = false;
+                    p.isOnBoardFrame = false;
+                    p.currentScale = 1.0; 
+                });
+                
+                checkAndMergeGroups();
+
+                // MONITOR & EVALUATE GLOBAL BORDER COMPLETION STATE
+                let allEdgesLocked = pieces.filter(p => p.r === 0 || p.r === rows - 1 || p.c === 0 || p.c === cols - 1)
+                                           .every(p => p.isLocked);
+                
+                // POP ONLY when edges are completed AND the whole puzzle is NOT completed yet
+                let isWholePuzzleComplete = pieces.every(p => p.isLocked);
+                
+                if (allEdgesLocked && !isWholePuzzleComplete && !hasTriggeredBorderThumb) {
+                    hasTriggeredBorderThumb = true;
+                    introText = "Border Built! 🧱";
+                    introAlpha = 255;
+                    introState = "holding";
+                    introTimerStart = millis();
+                    
+                    triggerThumbAnimation();
+                    
+                    if (isEdgeFilterActive) {
+                        toggleEdgeFilter();
+                    }
+                }
+
+                checkVictoryCondition();
+            } else if (droppedInsidePuzzleFrame) {
+                dragGroupPieces.forEach(p => {
+                    p.inTray = false;
+                    p.isLocked = false;
+                    p.isOnBoardFrame = true;
+                    p.currentScale = 1.0; 
+                });
+                checkAndMergeGroups();
+            } else if (mouseY > trayY - TRAY_THRESHOLD) {
+                let anchorPiece = dragGroupPieces[0];
+                let baseRelativeX = anchorPiece.currX - trayScroll - 50;
+                let targetSlotIndex = Math.round(baseRelativeX / (sW + TRAY_GAP));
+                targetSlotIndex = constrain(targetSlotIndex, 0, trayOrder.length);
+
+                dragGroupPieces.forEach((p, idx) => {
+                    p.inTray = true;
+                    p.isOnBoardFrame = false;
+                    p.currentScale = trayScaleFactor; 
+                    trayOrder.splice(targetSlotIndex + idx, 0, p);
+                });
+            } else {
+                let idealPieceX = mouseX - groupPivotOffsetX * trayScaleFactor;
+                let idealPieceY = mouseY - groupPivotOffsetY * trayScaleFactor;
+                let groupAnchorX = idealPieceX - selected.c * pW * trayScaleFactor;
+                let groupAnchorY = idealPieceY - selected.r * pH * trayScaleFactor;
+
+                dragGroupPieces.forEach(p => {
+                    p.inTray = false;
+                    p.isOnBoardFrame = false;
+                    p.currentScale = trayScaleFactor; 
+                    p.currX = groupAnchorX + p.c * pW * trayScaleFactor;
+                    p.currY = groupAnchorY + p.r * pH * trayScaleFactor;
+                });
+                checkAndMergeGroups();
+            }
+        }
+        selected = null;
+        selectedOrigTrayIdx = -1;
+        hasDraggedSelected = false;
+        dragGroupPieces = [];
+    }
+    isScrollingTray = false;
+}
+
+function checkAndMergeGroups() {
+    let puzzleGridThreshold = 25; 
+
+    for (let i = 0; i < pieces.length; i++) {
+        for (let j = 0; j < pieces.length; j++) {
+            let p1 = pieces[i];
+            let p2 = pieces[j];
+
+            if (p1.groupId === p2.groupId || p1.isLocked || p2.isLocked || p1.inTray || p2.inTray) continue;
+
+            let isHorizontalNeighbor = (p1.r === p2.r && Math.abs(p1.c - p2.c) === 1);
+            let isVerticalNeighbor = (p1.c === p2.c && Math.abs(p1.r - p2.r) === 1);
+
+            if (isHorizontalNeighbor || isVerticalNeighbor) {
+                let expectedP2X = p1.currX + (p2.c - p1.c) * pW * p1.currentScale;
+                let expectedP2Y = p1.currY + (p2.r - p1.r) * pH * p1.currentScale;
+
+                if (dist(p2.currX, p2.currY, expectedP2X, expectedP2Y) < puzzleGridThreshold) {
+                    let shiftX = expectedP2X - p2.currX;
+                    let shiftY = expectedP2Y - p2.currY;
+
+                    let oldGroupId = p2.groupId;
+                    let targetGroupId = p1.groupId;
+
+                    pieces.forEach(p => {
+                        if (p.groupId === oldGroupId) {
+                            p.currX += shiftX;
+                            p.currY += shiftY;
+                            p.groupId = targetGroupId;
+                            p.glowFade = 0.85; 
+                        }
+                    });
+                }
+            }
+        }
+    }
+}
+
+function windowResized() { 
+    const viewport = getGameViewportSize();
+    resizeCanvas(viewport.width, viewport.height); 
+    trayY = height - 90; 
+    if (!img) return;
+    let fitW = width * 0.92;
+    let fitH = height * 0.72; 
+    let scale = min(fitW / img.width, fitH / img.height);
+    let lockedPW = (img.width * scale) / 9;
+    let lockedPH = (img.height * scale) / 9;
+
+    boardX = (width - (lockedPW * 9)) / 2; 
+    boardY = 85 + ((trayY - 95) - (lockedPH * 9)) / 2;
+}
+</script>
+</body>
+</html>
